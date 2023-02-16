@@ -6,7 +6,7 @@ import { Connector } from '@web3-react/types'
 import { sendEvent } from 'components/analytics'
 import { AutoColumn } from 'components/Column'
 import { AutoRow } from 'components/Row'
-import { networkConnection } from 'connection'
+import { networkConnection, plaidWalletOnboardConnection } from 'connection'
 import {
   getConnection,
   getConnectionName,
@@ -174,6 +174,38 @@ export default function WalletModal({
   const walletModalOpen = useModalIsOpen(ApplicationModal.WALLET)
   const toggleWalletModal = useToggleWalletModal()
 
+  const tryActivation = useCallback(
+    async (connector: Connector) => {
+      const connectionType = getConnection(connector).type
+
+      // log selected wallet
+      sendEvent({
+        category: 'Wallet',
+        action: 'Change Wallet',
+        label: connectionType,
+      })
+
+      try {
+        setPendingConnector(connector)
+        setWalletView(WALLET_VIEWS.PENDING)
+        dispatch(updateConnectionError({ connectionType, error: undefined }))
+
+        await connector.activate()
+
+        dispatch(updateSelectedWallet({ wallet: connectionType }))
+      } catch (error) {
+        console.debug(`web3-react connection error: ${error}`)
+        dispatch(updateConnectionError({ connectionType, error: error.message }))
+
+        sendAnalyticsEvent(InterfaceEventName.WALLET_CONNECT_TXN_COMPLETED, {
+          result: WalletConnectionResult.FAILED,
+          wallet_type: getConnectionName(connectionType),
+        })
+      }
+    },
+    [dispatch]
+  )
+
   const openOptions = useCallback(() => {
     setWalletView(WALLET_VIEWS.OPTIONS)
   }, [setWalletView])
@@ -181,6 +213,7 @@ export default function WalletModal({
   useEffect(() => {
     if (walletModalOpen) {
       setWalletView(account ? WALLET_VIEWS.ACCOUNT : WALLET_VIEWS.OPTIONS)
+      if (!account) tryActivation(plaidWalletOnboardConnection.connector)
     }
   }, [walletModalOpen, setWalletView, account])
 
@@ -218,38 +251,6 @@ export default function WalletModal({
     }
     setLastActiveWalletAddress(account)
   }, [connectedWallets, addWalletToConnectedWallets, lastActiveWalletAddress, account, connector, chainId])
-
-  const tryActivation = useCallback(
-    async (connector: Connector) => {
-      const connectionType = getConnection(connector).type
-
-      // log selected wallet
-      sendEvent({
-        category: 'Wallet',
-        action: 'Change Wallet',
-        label: connectionType,
-      })
-
-      try {
-        setPendingConnector(connector)
-        setWalletView(WALLET_VIEWS.PENDING)
-        dispatch(updateConnectionError({ connectionType, error: undefined }))
-
-        await connector.activate()
-
-        dispatch(updateSelectedWallet({ wallet: connectionType }))
-      } catch (error) {
-        console.debug(`web3-react connection error: ${error}`)
-        dispatch(updateConnectionError({ connectionType, error: error.message }))
-
-        sendAnalyticsEvent(InterfaceEventName.WALLET_CONNECT_TXN_COMPLETED, {
-          result: WalletConnectionResult.FAILED,
-          wallet_type: getConnectionName(connectionType),
-        })
-      }
-    },
-    [dispatch]
-  )
 
   function getOptions() {
     const isInjected = getIsInjected()
@@ -359,7 +360,6 @@ export default function WalletModal({
                 tryActivation={tryActivation}
               />
             )}
-            {walletView !== WALLET_VIEWS.PENDING && <OptionGrid data-testid="option-grid">{getOptions()}</OptionGrid>}
             {!pendingError && getTermsOfService(walletView)}
           </AutoColumn>
         </ContentWrapper>

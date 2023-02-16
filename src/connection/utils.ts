@@ -5,6 +5,7 @@ import {
   gnosisSafeConnection,
   injectedConnection,
   networkConnection,
+  plaidWalletOnboardConnection,
   walletConnectConnection,
 } from 'connection'
 
@@ -33,9 +34,10 @@ const CONNECTIONS = [
   coinbaseWalletConnection,
   walletConnectConnection,
   networkConnection,
+  plaidWalletOnboardConnection,
 ]
 export function getConnection(c: Connector | ConnectionType) {
-  if (c instanceof Connector) {
+  if (Object.getPrototypeOf(Object.getPrototypeOf(c)).constructor.name === 'Connector') {
     const connection = CONNECTIONS.find((connection) => connection.connector === c)
     if (!connection) {
       throw Error('unsupported connector')
@@ -53,6 +55,10 @@ export function getConnection(c: Connector | ConnectionType) {
         return networkConnection
       case ConnectionType.GNOSIS_SAFE:
         return gnosisSafeConnection
+      case ConnectionType.PLAID_WALLET_ONBOARD:
+        return plaidWalletOnboardConnection
+      default:
+        throw Error('unsupported connector')
     }
   }
 }
@@ -72,5 +78,7 @@ export function getConnectionName(
       return 'Network'
     case ConnectionType.GNOSIS_SAFE:
       return 'Gnosis Safe'
+    case ConnectionType.PLAID_WALLET_ONBOARD:
+      return 'Plaid Wallet Onboard'
   }
 }

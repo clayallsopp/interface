@@ -5,6 +5,7 @@ import { MetaMask } from '@web3-react/metamask'
 import { Network } from '@web3-react/network'
 import { Connector } from '@web3-react/types'
 import { WalletConnect } from '@web3-react/walletconnect'
+import { PlaidWalletOnboard } from 'react-plaid-link/web3/web3-react'
 import { SupportedChainId } from 'constants/chains'
 
 import UNISWAP_LOGO_URL from '../assets/svg/logo.svg'
@@ -17,6 +18,7 @@ export enum ConnectionType {
   WALLET_CONNECT = 'WALLET_CONNECT',
   NETWORK = 'NETWORK',
   GNOSIS_SAFE = 'GNOSIS_SAFE',
+  PLAID_WALLET_ONBOARD = 'PLAID_WALLET_ONBOARD',
 }
 
 export interface Connection {
@@ -94,4 +96,20 @@ export const coinbaseWalletConnection: Connection = {
   connector: web3CoinbaseWallet,
   hooks: web3CoinbaseWalletHooks,
   type: ConnectionType.COINBASE_WALLET,
+}
+
+const [plaidWalletOnboard, plaidWalletOnboardHooks] = initializeConnector<PlaidWalletOnboard>(
+  (actions) => new PlaidWalletOnboard({
+    actions,
+    options: {
+      token: "link-sandbox-6dc2d621-ecdf-49d0-a1ab-1f8cdff464e9",
+      chain: { chainId: '0x1', rpcUrl: RPC_URLS[SupportedChainId.MAINNET][0] },
+    },
+    onError,
+  }),
+)
+export const plaidWalletOnboardConnection: Connection = {
+  connector: plaidWalletOnboard,
+  hooks: plaidWalletOnboardHooks,
+  type: ConnectionType.PLAID_WALLET_ONBOARD,
 }

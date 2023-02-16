@@ -54,7 +54,7 @@ const useIcon = (connectionType: ConnectionType) => {
   const { account } = useWeb3React()
   const { avatar } = useENSAvatar(account ?? undefined)
 
-  if (avatar || connectionType === ConnectionType.INJECTED) {
+  if (avatar || connectionType === ConnectionType.INJECTED || connectionType === ConnectionType.PLAID_WALLET_ONBOARD) {
     return <Identicon />
   } else if (connectionType === ConnectionType.WALLET_CONNECT) {
     return <img src={WalletConnectIcon} alt="WalletConnect" />
